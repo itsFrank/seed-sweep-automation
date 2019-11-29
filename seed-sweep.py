@@ -2,6 +2,7 @@
 import subprocess
 import os.path
 import sys
+from datetime import datetime
 
 FNULL = open(os.devnull, 'w')
 
@@ -44,25 +45,40 @@ def getExistingFmax():
 # Can provide a start-seed to restart the process after a previous run
 seed = 1
 if len(sys.argv) > 1:
-    seed = int(sys.argv[0])
+    seed = int(sys.argv[1])
 
 fastest_fmax = getExistingFmax()
 
 run = True
+append_write = 'w+'
+if os.path.exists("seed_sweep.log"):
+    append_write = 'a' # append if already exists
+f = open("seed_sweep.log", append_write)
+if (append_write == "a"):
+    f.write("\n")
+f.write("Starting new seed-sweeping loop - Beginning with seed = {}...\n".format(seed))
 while run:
     cleanSynth()
     synthSetup(seed)
-    print("Starting with seed = {}...".format(seed), end = " ", flush=True)
+    now = datetime.now()
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
+    f.write("[ {} ]: Starting with seed = {}...\n".format(dt_string, seed))
+    f.flush()
     runSynth()
     fmax = getFmax()
     if fmax == -1:
-        print("An error occured")
+        f.write("\tAn error occured")
+        f.flush()
     else:
-        print("Complete - FMAX = {}".format(fmax), end = " ", flush=True)
+        f.write("\tComplete - FMAX = {}".format(fmax))
+        f.flush()
         if fmax > fastest_fmax:
-            print(" - New fastest; saving results to fastest_synth", end = " ", flush=True)
+            fastest_fmax = fmax
+            f.write("\tNew fastest; saving results to fastest_synth")
+            f.flush()
             moveFastestSynth(fmax)
-        print("")
+        f.write("\n")
+        f.flush()
     seed += 1
 
 
